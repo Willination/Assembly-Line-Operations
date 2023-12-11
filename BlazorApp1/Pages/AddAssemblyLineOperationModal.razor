@@ -1,0 +1,89 @@
+﻿@using BlazorApp1.Data
+@using Microsoft.AspNetCore.Components.Forms
+@code {
+    bool showModal = false;
+    AssemblyLineOperation newAssemblyLineOperation = new AssemblyLineOperation();
+    EditContext? editContext;
+
+    [Parameter]
+    public EventCallback<AssemblyLineOperation> OnOperationAdded { get; set; }
+
+    int currentOperationId = 1;
+
+    protected override void OnInitialized()
+    {
+        var initialOperation = new AssemblyLineOperation();
+        editContext = new EditContext(initialOperation);
+    }
+
+    public void Show()
+    {
+        showModal = true;
+    }
+
+    public void Hide()
+    {
+        showModal = false;
+        newAssemblyLineOperation = new AssemblyLineOperation();
+    }
+
+    async Task AddOperation()
+    {
+        if (newAssemblyLineOperation.OperationImageData == null)
+        {
+            newAssemblyLineOperation.OperationImageData = Array.Empty<byte>();
+        }
+
+        newAssemblyLineOperation.AssemblyLineOperationID = currentOperationId;
+        currentOperationId++;
+
+        await OnOperationAdded.InvokeAsync(newAssemblyLineOperation);
+        newAssemblyLineOperation = new AssemblyLineOperation();
+    }
+
+    async Task HandleFileSelection(InputFileChangeEventArgs e)
+    {
+        var files = e.GetMultipleFiles();
+        if (files.Any())
+        {
+            foreach (var file in files)
+            {
+                var buffer = new byte[file.Size];
+                await file.OpenReadStream().ReadAsync(buffer);
+                newAssemblyLineOperation.OperationImageData = buffer;
+
+           
+                Console.WriteLine($"ImageData set for operation {newAssemblyLineOperation.AssemblyLineOperationID}");
+            }
+        }
+        else
+        {
+            newAssemblyLineOperation.OperationImageData = Array.Empty<byte>();
+
+       
+            Console.WriteLine($"ImageData set to empty for operation {newAssemblyLineOperation.AssemblyLineOperationID}");
+        }
+    }
+}
+
+<Modal @bind-IsOpen="showModal" Title="Add New Operation">
+    <div class="modal-dialog-centered">
+        <EditForm EditContext="editContext" OnValidSubmit="AddOperation">
+            <div class="mb-3">
+                <label for="operationName" class="form-label">Operation Name</label>
+                <InputText id="operationName" @bind-Value="newAssemblyLineOperation.OperationName" class="form-control" placeholder="Enter operation name" />
+            </div>
+            <div class="mb-3">
+                <label for="orderInWhichToPerform" class="form-label">Order In Which to Perform</label>
+                <InputNumber id="orderInWhichToPerform" @bind-Value="newAssemblyLineOperation.OrderInWhichToPerform" class="form-control" placeholder="Enter order in which to perform" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label d-block">Operation Image</label>
+                <InputFile OnChange="HandleFileSelection" class="form-control" />
+            </div>
+            <div class="d-grid">
+                <button type="submit" class="btn btn-primary">Add Operation</button>
+            </div>
+        </EditForm>
+    </div>
+</Modal>

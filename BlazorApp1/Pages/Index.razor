@@ -1,0 +1,163 @@
+﻿@page "/"
+
+@using BlazorApp1.Data
+
+<h1>Assembly Line Operations</h1>
+
+<div class="assembly-line-operations-container">
+    @foreach (var assemblyLineOperation in assemblyLineOperations)
+    {
+        <div class="assembly-line-operation-item">
+            <div>
+                <img src="@GetImageData(assemblyLineOperation.OperationImageData)" alt="Operation Image" />
+            </div>
+            <div>
+                <p><strong>Assembly Line Operation ID:</strong> @assemblyLineOperation.AssemblyLineOperationID</p>
+                <p><strong>Operation Name:</strong> @assemblyLineOperation.OperationName</p>
+                <p><strong>Order In Which To Perform:</strong> @assemblyLineOperation.OrderInWhichToPerform</p>
+                <p><strong>Custom Device:</strong> @(assemblyLineOperation.AssemblyLineDevice != null ? assemblyLineOperation.AssemblyLineDevice.CustomDeviceName : "No Device Assigned")</p>
+                <button @onclick="() => RemoveAssemblyLineOperation(assemblyLineOperation)">Remove</button>
+                <button @onclick="() => ShowAddAssemblyLineDeviceModal(assemblyLineOperation)">Add Device</button>
+            </div>
+        </div>
+    }
+</div>
+
+<button class="add-assembly-line-operation-button" @onclick="ShowAddAssemblyLineOperationModal">Add Operation</button>
+
+<AddAssemblyLineOperationModal @ref="addAssemblyLineOperationModal" OnOperationAdded="HandleAssemblyLineOperationAdded" />
+
+<AddAssemblyLineDeviceModal @ref="addAssemblyLineDeviceModal" AssemblyLineDevices="assemblyLineDevices" AssemblyLineOperations="assemblyLineOperations" OnDeviceAdded="HandleAssemblyLineDeviceAdded" />
+
+@code {
+    List<AssemblyLineOperation> assemblyLineOperations = new List<AssemblyLineOperation>
+    {
+        new AssemblyLineOperation { AssemblyLineOperationID = 1, OperationName = "Operation 1", OrderInWhichToPerform = 1, OperationImageData = Array.Empty<byte>(), AssemblyLineDevice = null },
+        new AssemblyLineOperation { AssemblyLineOperationID = 2, OperationName = "Operation 2", OrderInWhichToPerform = 2, OperationImageData = Array.Empty<byte>(), AssemblyLineDevice = null },
+    };
+
+    List<AssemblyLineDevice> assemblyLineDevices = new List<AssemblyLineDevice>
+    {
+        new AssemblyLineDevice { AssemblyLineDeviceID = 1, CustomDeviceName = "Device 1", Type = CustomDeviceType.Scale },
+        new AssemblyLineDevice { AssemblyLineDeviceID = 2, CustomDeviceName = "Device 2", Type = CustomDeviceType.RFIDReader },
+        new AssemblyLineDevice { AssemblyLineDeviceID = 3, CustomDeviceName = "Device 3", Type = CustomDeviceType.Camera },
+        new AssemblyLineDevice { AssemblyLineDeviceID = 4, CustomDeviceName = "Device 4", Type = CustomDeviceType.ThermalPrinter }
+    };
+
+    AssemblyLineOperation newAssemblyLineOperation = new AssemblyLineOperation();
+
+    AssemblyLineDevice newAssemblyLineDevice = new AssemblyLineDevice();
+
+    AssemblyLineOperation selectedAssemblyLineOperation = new AssemblyLineOperation();
+
+    int selectedDeviceId;
+
+    AddAssemblyLineOperationModal? addAssemblyLineOperationModal;
+
+    AddAssemblyLineDeviceModal? addAssemblyLineDeviceModal;
+
+    protected override void OnInitialized()
+    {
+        addAssemblyLineOperationModal = new AddAssemblyLineOperationModal();
+
+        addAssemblyLineDeviceModal = new AddAssemblyLineDeviceModal();
+    }
+
+    void ShowAddAssemblyLineOperationModal() => addAssemblyLineOperationModal.Show();
+
+    void ShowAddAssemblyLineDeviceModal(AssemblyLineOperation operation)
+    {
+        selectedAssemblyLineOperation = operation;
+
+        addAssemblyLineDeviceModal.Show(operation);
+    }
+
+    void HandleAssemblyLineOperationAdded(AssemblyLineOperation operation)
+    {
+        if (operation != null)
+        {
+            // Increment the AssemblyLineOperationID
+            operation.AssemblyLineOperationID = assemblyLineOperations.Count + 1;
+            assemblyLineOperations.Add(operation);
+
+         
+            Console.WriteLine("New operation added:");
+            Console.WriteLine($"Operation ID: {operation.AssemblyLineOperationID}");
+            Console.WriteLine($"Operation Name: {operation.OperationName}");
+        }
+    }
+
+    void HandleAssemblyLineDeviceAdded(AssemblyLineDevice device)
+    {
+        if (selectedAssemblyLineOperation != null)
+        {
+            var newDevice = new AssemblyLineDevice
+                {
+                    AssemblyLineDeviceID = device.AssemblyLineDeviceID,
+                    CustomDeviceName = device.CustomDeviceName,
+                    Type = device.Type
+                };
+
+            selectedAssemblyLineOperation.AssemblyLineDevice = newDevice;
+            StateHasChanged();
+        }
+    }
+
+    void RemoveAssemblyLineOperation(AssemblyLineOperation operation)
+    {
+        assemblyLineOperations.Remove(operation);
+    }
+
+    string GetImageData(byte[] imageData)
+    {
+        if (imageData != null && imageData.Length > 0)
+        {
+            var base64 = Convert.ToBase64String(imageData);
+
+            return $"data:image/gif;base64,{base64}";
+        }
+
+        return ""; 
+    }
+}
+
+<style>
+ 
+    .assembly-line-operations-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        justify-content: center; 
+    }
+
+    .assembly-line-operation-item {
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        max-width: 250px;
+        background-color: #f9f9f9;
+    }
+
+        .assembly-line-operation-item img {
+            max-width: 100px;
+            max-height: 100px;
+            object-fit: cover;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+    .add-assembly-line-operation-button,
+    .add-assembly-line-device-button {
+        margin-top: 20px;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        background-color: #4CAF50;
+        color: white;
+        font-size: 16px;
+        cursor: pointer;
+    }
+</style>

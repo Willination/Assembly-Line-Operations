@@ -1,0 +1,82 @@
+﻿@using BlazorApp1.Data
+@using System.Collections.Generic
+@inject IJSRuntime JSRuntime
+
+@code {
+    AssemblyLineDevice newAssemblyLineDevice = new AssemblyLineDevice();
+    int selectedDeviceId;
+    AssemblyLineOperation selectedAssemblyLineOperation = new AssemblyLineOperation();
+    bool show = false;
+    EditContext? editContext;
+
+    [Parameter]
+    public List<AssemblyLineDevice>? AssemblyLineDevices { get; set; }
+
+    [Parameter]
+    public List<AssemblyLineOperation>? AssemblyLineOperations { get; set; }
+
+    [Parameter]
+    public EventCallback<AssemblyLineDevice> OnDeviceAdded { get; set; }
+
+    protected override void OnInitialized()
+    {
+        var initialDevice = new AssemblyLineDevice();
+        editContext = new EditContext(initialDevice);
+    }
+
+    public void Show(AssemblyLineOperation operation)
+    {
+        selectedAssemblyLineOperation = operation;
+        show = true;
+    }
+
+    public void Hide()
+    {
+        selectedAssemblyLineOperation = new AssemblyLineOperation();
+        show = false;
+    }
+
+    async Task AddDevice()
+    {
+        if (selectedAssemblyLineOperation != null && selectedDeviceId != 0 && selectedAssemblyLineOperation.AssemblyLineDevice == null)
+        {
+        
+            var device = AssemblyLineDevices.FirstOrDefault(d => d.AssemblyLineDeviceID == selectedDeviceId);
+            if (device != null)
+            {
+           
+                selectedAssemblyLineOperation.AssemblyLineDevice = device;
+                await OnDeviceAdded.InvokeAsync(device);
+                newAssemblyLineDevice = new AssemblyLineDevice(); // Clear the form
+                Hide(); 
+            }
+        }
+        else
+        {
+        
+            await JSRuntime.InvokeVoidAsync("alert", "An operation can only have one device assigned.");
+        }
+    }
+}
+
+<Modal @bind-IsOpen="show" Title="Add New Device to Operation">
+    <div class="modal-dialog-centered">
+        <EditForm EditContext="editContext" OnValidSubmit="AddDevice">
+            <div class="mb-3">
+                <label for="selectedDevice" class="form-label">Select Device</label>
+                <select id="selectedDevice" @bind="@selectedDeviceId" class="form-select">
+                    @foreach (var device in AssemblyLineDevices)
+                    {
+                        <option value="@device.AssemblyLineDeviceID">@device.CustomDeviceName</option>
+                    }
+                </select>
+            </div>
+            <div class="mb-3">
+                <p>Selected Operation: @selectedAssemblyLineOperation.OperationName</p>
+            </div>
+            <div class="d-grid">
+                <button type="submit" class="btn btn-primary">Add Device</button>
+            </div>
+        </EditForm>
+    </div>
+</Modal>
